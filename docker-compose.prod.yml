@@ -1,0 +1,21 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    ports:
+      # Direct access (no reverse proxy): "3000:3000"
+      # Behind nginx/Caddy (TRUST_PROXY=true): "127.0.0.1:3000:3000"
+      - "${BIND_HOST:-0.0.0.0}:3000:3000"
+    volumes:
+      - db-data:/data
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      DATABASE_PATH: /data/stream-switch.db
+    restart: unless-stopped
+
+volumes:
+  db-data:

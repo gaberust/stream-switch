@@ -1,0 +1,15 @@
+# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.
+version: v1.25.1
+# ignores vulnerabilities until expiry date; change duration by modifying expiry date
+ignore:
+  javascript/DOMXSS:
+    - 'frontend/src/pages/Dashboard.tsx > javascript/DOMXSS':
+        reason: >-
+          watchUrl is server-controlled data from YouTube API, validated to
+          https://www.youtube.com with video ID allowlist before use as href
+        created: 2026-03-24T02:09:10.115Z
+exclude:
+  code:
+    - backend/src/test
+    - backend/vitest.config.ts
+patch: {}

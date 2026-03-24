@@ -1,0 +1,31 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    ports:
+      - "3000:3000"
+      - "5173:5173"
+    volumes:
+      - ./backend:/app/backend
+      - ./frontend:/app/frontend
+      - backend_modules:/app/backend/node_modules
+      - frontend_modules:/app/frontend/node_modules
+      - db-data:/data
+    environment:
+      NODE_ENV: development
+      DATABASE_PATH: /data/stream-switch.db
+      SESSION_SECRET: ${SESSION_SECRET:-change-me-in-production-32chars!}
+      CHOKIDAR_USEPOLLING: "true"
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      YOUTUBE_CLIENT_ID: ${YOUTUBE_CLIENT_ID:-}
+      YOUTUBE_CLIENT_SECRET: ${YOUTUBE_CLIENT_SECRET:-}
+      YOUTUBE_REDIRECT_URI: ${YOUTUBE_REDIRECT_URI:-http://localhost:3000/api/youtube/callback}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  db-data:
+  backend_modules:
+  frontend_modules:

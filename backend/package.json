@@ -1,0 +1,31 @@
+{
+  "name": "stream-switch-backend",
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "tsx watch --clear-screen=false src/index.ts",
+    "build": "tsc",
+    "db:push": "drizzle-kit push",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@fastify/cookie": "^11.0.2",
+    "@fastify/session": "^11.1.1",
+    "@fastify/static": "^9.0.0",
+    "@fastify/websocket": "^11.2.0",
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^12.8.0",
+    "drizzle-orm": "^0.45.1",
+    "fastify": "^5.8.4",
+    "googleapis": "^144.0.0"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.9.0",
+    "@types/ws": "^8.0.0",
+    "drizzle-kit": "^0.31.10",
+    "tsx": "^4.21.0",
+    "typescript": "^5.7.2",
+    "vitest": "^3.0.0"
+  }
+}

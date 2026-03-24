@@ -1,0 +1,9 @@
+{
+  "devDependencies": {
+    "@vitest/coverage-v8": "^4.1.1",
+    "vitest": "^4.1.1"
+  },
+  "dependencies": {
+    "@fastify/websocket": "^11.2.0"
+  }
+}
