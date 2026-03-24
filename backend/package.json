@@ -1,6 +1,6 @@
 {
   "name": "stream-switch-backend",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "scripts": {
     "dev": "tsx watch --clear-screen=false src/index.ts",
     "build": "tsc",

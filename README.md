@@ -120,45 +120,54 @@ Because the app is in Testing mode, only approved Google accounts can authorize 
 
 ## Step 2 — Prepare Your Configuration File
 
-1. Download or clone the Stream Switch files to your computer.
+Create a file called `.env` in your Stream Switch folder (you will create this folder in Step 3). Copy the contents below into it and fill in the values:
 
-2. In the Stream Switch folder, find the file called `.env.example` and make a copy of it named `.env`:
+```
+# A long, random secret used to sign session cookies.
+# Generate one with: openssl rand -base64 32
+SESSION_SECRET=
 
-   - On Mac/Linux: `cp .env.example .env`
-   - On Windows: copy and rename the file in File Explorer
+# YouTube OAuth2 credentials — from Step 1.4 above.
+YOUTUBE_CLIENT_ID=
+YOUTUBE_CLIENT_SECRET=
 
-3. Open `.env` in a text editor (Notepad, TextEdit, VS Code, etc.) and fill in the values:
+# The full URL of your server followed by /api/youtube/callback
+# Must match exactly what you entered in Google Cloud Console.
+# Example: http://192.168.1.100:3000/api/youtube/callback
+YOUTUBE_REDIRECT_URI=http://localhost:3000/api/youtube/callback
 
-   ```
-   SESSION_SECRET=        ← Replace with a long random string (see below)
-   YOUTUBE_CLIENT_ID=     ← Paste your Client ID from Step 1.4
-   YOUTUBE_CLIENT_SECRET= ← Paste your Client Secret from Step 1.4
-   YOUTUBE_REDIRECT_URI=  ← The same redirect URI you entered in Step 1.4
-   FRONTEND_URL=          ← Leave this blank
-   ```
+# Set to true if running behind nginx, Caddy, or another HTTPS reverse proxy.
+TRUST_PROXY=false
+BIND_HOST=0.0.0.0
+```
 
-   **Generating a SESSION_SECRET:** This is a secret key that protects user sessions. It should be long and random. You can generate one by running this command in a terminal:
+**Generating a SESSION_SECRET:** Run this command in a terminal and paste the output as the value:
 
-   ```
-   openssl rand -base64 32
-   ```
+```
+openssl rand -base64 32
+```
 
-   Or use any password generator to create a string of 32+ random characters.
+Or use any password generator to create a string of 32+ random characters.
 
-   **Example completed `.env` file:**
-   ```
-   SESSION_SECRET=K8mP2xQ9vR4nL7wE1jY6uA3sD0hF5cB+gN=
-   YOUTUBE_CLIENT_ID=123456789-abc123.apps.googleusercontent.com
-   YOUTUBE_CLIENT_SECRET=GOCSPX-xxxxxxxxxxxxxxxxxxxx
-   YOUTUBE_REDIRECT_URI=http://192.168.1.100:3000/api/youtube/callback
-   FRONTEND_URL=
-   ```
+**Example completed `.env` file:**
+```
+SESSION_SECRET=K8mP2xQ9vR4nL7wE1jY6uA3sD0hF5cB+gN=
+YOUTUBE_CLIENT_ID=123456789-abc123.apps.googleusercontent.com
+YOUTUBE_CLIENT_SECRET=GOCSPX-xxxxxxxxxxxxxxxxxxxx
+YOUTUBE_REDIRECT_URI=http://192.168.1.100:3000/api/youtube/callback
+TRUST_PROXY=false
+BIND_HOST=0.0.0.0
+```
 
 ---
 
 ## Step 3 — Deploy with Docker
 
-Open a terminal (Command Prompt or PowerShell on Windows, Terminal on Mac/Linux).
+Open a terminal (Command Prompt or PowerShell on Windows, Terminal on Mac/Linux) and create a new folder for Stream Switch:
+
+```bash
+mkdir stream-switch && cd stream-switch
+```
 
 There are two ways to deploy — choose one:
 
@@ -166,17 +175,38 @@ There are two ways to deploy — choose one:
 
 ### Option A — Pre-built image from Docker Hub (recommended)
 
-This is the easiest option. You only need two files on your server: `docker-compose.hub.yml` and `.env`.
+This option requires no code download. You only need two files in your folder: `docker-compose.yml` and `.env`.
 
-1. Download `docker-compose.hub.yml` and `.env.example` from the Stream Switch repository to a folder on your server.
-2. Rename `.env.example` to `.env` and fill it in (see [Step 2](#step-2--prepare-your-configuration-file)).
-3. Start the app:
+**1. Create `docker-compose.yml`** with the following contents:
 
-```bash
-docker compose -f docker-compose.hub.yml up -d
+```yaml
+services:
+  app:
+    image: gaberust/stream-switch:latest
+    ports:
+      - "${BIND_HOST:-0.0.0.0}:3000:3000"
+    volumes:
+      - db-data:/data
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      DATABASE_PATH: /data/stream-switch.db
+    restart: unless-stopped
+
+volumes:
+  db-data:
 ```
 
-Docker will pull the latest pre-built image and start the app in the background.
+**2. Create `.env`** using the template from [Step 2](#step-2--prepare-your-configuration-file) and fill in your values.
+
+**3. Start the app:**
+
+```bash
+docker compose up -d
+```
+
+Docker will pull the pre-built image and start the app in the background.
 
 ---
 
@@ -200,11 +230,7 @@ This will:
 ### Verify it's running
 
 ```bash
-# If using Option A:
-docker compose -f docker-compose.hub.yml ps
-
-# If using Option B:
-docker compose -f docker-compose.prod.yml ps
+docker compose ps
 ```
 
 You should see the `app` service listed with a status of `running`.
@@ -366,9 +392,11 @@ Your database (users, streams, history) is stored in a Docker volume and is pres
 
 ### Option A — Docker Hub image
 
+In your Stream Switch folder:
+
 ```bash
-docker compose -f docker-compose.hub.yml pull
-docker compose -f docker-compose.hub.yml up -d
+docker compose pull
+docker compose up -d
 ```
 
 ### Option B — Build from source
@@ -392,7 +420,7 @@ Make sure you're using the correct username and password. The default is `admin`
 - Check that `YOUTUBE_REDIRECT_URI` in `.env` exactly matches the URI in Google Cloud Console — even a missing `http://` or a trailing slash will cause it to fail.
 - Check that the Google account you're connecting with has been added as a test user in Google Cloud Console.
 - Restart the app after any changes to `.env`:
-  - Docker Hub: `docker compose -f docker-compose.hub.yml restart`
+  - Docker Hub: `docker compose restart` (from your Stream Switch folder)
   - Build from source: `docker compose -f docker-compose.prod.yml restart`
 
 ### Stream stays "Starting…" and never goes live
@@ -406,7 +434,7 @@ Make sure you're using the correct username and password. The default is `admin`
 
 ### The app is unreachable in the browser
 - Confirm Docker is running:
-  - Docker Hub: `docker compose -f docker-compose.hub.yml ps`
+  - Docker Hub: `docker compose ps` (from your Stream Switch folder)
   - Build from source: `docker compose -f docker-compose.prod.yml ps`
 - Check that port 3000 is not blocked by a firewall on the server.
 - On cloud servers, you may need to open port 3000 in your provider's firewall/security group settings.
