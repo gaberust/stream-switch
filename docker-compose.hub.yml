@@ -1,6 +1,6 @@
 services:
   app:
-    image: YOUR_DOCKERHUB_USERNAME/stream-switch:latest
+    image: gaberust/stream-switch:latest
     ports:
       - "${BIND_HOST:-0.0.0.0}:3000:3000"
     volumes:
