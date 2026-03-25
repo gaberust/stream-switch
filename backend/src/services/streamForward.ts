@@ -3,7 +3,7 @@ import { EventEmitter } from 'events'
 import net from 'net'
 import { desc, eq, inArray } from 'drizzle-orm'
 import { db } from '../db/index'
-import { streamConfig, streamForwards, streams } from '../db/schema'
+import { streamConfig, streamForwards, streams, users } from '../db/schema'
 import type { FfmpegProcessManager, ProcessStatus } from './ffmpeg'
 import type { YouTubeService } from './youtube'
 
@@ -19,6 +19,7 @@ export interface ForwardRecord {
   title: string
   watchUrl: string
   startedBy: number
+  startedByUsername: string
   startedAt: string
   stoppedAt?: string
   stopReason?: string
@@ -96,6 +97,12 @@ export class StreamForwardService extends EventEmitter {
         .where(inArray(streamForwards.id, stuckIds))
     }
 
+    const userIds = [...new Set(rows.map((r) => r.startedBy))]
+    const userRows = userIds.length > 0
+      ? await db.select({ id: users.id, username: users.username }).from(users).where(inArray(users.id, userIds))
+      : []
+    const usernameMap = new Map(userRows.map((u) => [u.id, u.username]))
+
     for (const row of rows) {
       const isStuck = stuckIds.includes(row.id)
       this.forwards.set(row.id, {
@@ -108,6 +115,7 @@ export class StreamForwardService extends EventEmitter {
         title: row.title,
         watchUrl: row.watchUrl,
         startedBy: row.startedBy,
+        startedByUsername: usernameMap.get(row.startedBy) ?? 'unknown',
         startedAt: new Date(row.startedAt).toISOString(),
         stoppedAt: isStuck
           ? new Date().toISOString()
@@ -237,10 +245,13 @@ export class StreamForwardService extends EventEmitter {
     if (!streamRow) throw new Error('Stream not found')
 
     const globalConfig = await this.getConfig()
-    const sourceUrl = streamRow.sourceUrl ?? globalConfig.sourceUrl
+    const sourceUrl = streamRow.sourceUrl || globalConfig.sourceUrl
     if (!sourceUrl) throw new Error('No source URL configured')
 
-    const ffmpegExtraArgs = streamRow.ffmpegExtraArgs ?? globalConfig.ffmpegExtraArgs
+    const ffmpegExtraArgs = streamRow.ffmpegExtraArgs || globalConfig.ffmpegExtraArgs
+
+    const [userRow] = await db.select({ username: users.username }).from(users).where(eq(users.id, startedBy))
+    const startedByUsername = userRow?.username ?? 'unknown'
 
     const svc = await this.getYouTubeService()
     if (!svc) throw new Error('No YouTube account connected')
@@ -285,6 +296,7 @@ export class StreamForwardService extends EventEmitter {
       title: streamRow.youtubeTitle,
       watchUrl: broadcast.watchUrl,
       startedBy,
+      startedByUsername,
       startedAt: new Date(now).toISOString(),
     }
 

@@ -1,8 +1,8 @@
 import { randomBytes } from 'crypto'
-import { eq } from 'drizzle-orm'
+import { desc, eq } from 'drizzle-orm'
 import type { FastifyInstance } from 'fastify'
 import { db } from '../db/index'
-import { streams } from '../db/schema'
+import { streamForwards, streams, users } from '../db/schema'
 import { requireAdmin, requireAuth } from '../middleware/protect'
 
 export default async function streamsPlugin(app: FastifyInstance) {
@@ -37,8 +37,8 @@ export default async function streamsPlugin(app: FastifyInstance) {
             name: { type: 'string', minLength: 1 },
             youtubeTitle: { type: 'string', minLength: 1 },
             privacyStatus: { type: 'string', enum: ['public', 'private', 'unlisted'] },
-            sourceUrl: { type: 'string' },
-            ffmpegExtraArgs: { type: 'string' },
+            sourceUrl: { type: ['string', 'null'] },
+            ffmpegExtraArgs: { type: ['string', 'null'] },
           },
         },
       },
@@ -53,8 +53,8 @@ export default async function streamsPlugin(app: FastifyInstance) {
           name,
           youtubeTitle,
           privacyStatus,
-          sourceUrl: sourceUrl ?? null,
-          ffmpegExtraArgs: ffmpegExtraArgs ?? null,
+          sourceUrl: sourceUrl || null,
+          ffmpegExtraArgs: ffmpegExtraArgs || null,
           createdAt: Date.now(),
         })
         .returning()
@@ -166,6 +166,43 @@ export default async function streamsPlugin(app: FastifyInstance) {
     },
     async (request) => {
       return app.forwards.setConfig(request.body)
+    },
+  )
+
+  // ── Activity log (admin) ─────────────────────────────────────────────────────
+
+  app.get<{ Querystring: { page?: string } }>(
+    '/api/activity',
+    { preHandler: requireAdmin },
+    async (request) => {
+      const page = Math.max(1, parseInt(request.query.page ?? '1', 10) || 1)
+      const limit = 50
+      const offset = (page - 1) * limit
+
+      const rows = await db
+        .select({
+          id: streamForwards.id,
+          streamId: streamForwards.streamId,
+          streamName: streams.name,
+          status: streamForwards.status,
+          title: streamForwards.title,
+          startedByUsername: users.username,
+          startedAt: streamForwards.startedAt,
+          stoppedAt: streamForwards.stoppedAt,
+          stopReason: streamForwards.stopReason,
+        })
+        .from(streamForwards)
+        .leftJoin(streams, eq(streamForwards.streamId, streams.id))
+        .leftJoin(users, eq(streamForwards.startedBy, users.id))
+        .orderBy(desc(streamForwards.startedAt))
+        .limit(limit)
+        .offset(offset)
+
+      return rows.map((r) => ({
+        ...r,
+        startedAt: new Date(r.startedAt).toISOString(),
+        stoppedAt: r.stoppedAt ? new Date(r.stoppedAt).toISOString() : null,
+      }))
     },
   )
 }

@@ -13,6 +13,7 @@ interface ActiveForward {
   streamId: string
   stopReason?: string
   title: string
+  startedByUsername?: string
 }
 
 interface Stream {
@@ -265,6 +266,7 @@ export default function Dashboard() {
                   <div className="shrink-0 text-xs text-muted-foreground text-right space-y-0.5">
                     <div>{new Date(fwd.startedAt).toLocaleTimeString()}</div>
                     <div>{formatDuration(fwd.startedAt, fwd.stoppedAt)}</div>
+                    {fwd.startedByUsername && <div>{fwd.startedByUsername}</div>}
                   </div>
                 </div>
               ))}

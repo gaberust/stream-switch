@@ -1,4 +1,4 @@
-import { LogOut, Menu, Moon, Radio, Settings, Sun, Users, X } from 'lucide-react'
+import { ClipboardList, LogOut, Menu, Moon, Radio, Settings, Sun, Users, X } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 const navItems = [
   { label: 'Streams', href: '/', icon: Radio, adminOnly: false },
   { label: 'Users', href: '/users', icon: Users, adminOnly: true },
+  { label: 'Activity', href: '/activity', icon: ClipboardList, adminOnly: true },
   { label: 'Settings', href: '/settings', icon: Settings, adminOnly: false },
 ]
 

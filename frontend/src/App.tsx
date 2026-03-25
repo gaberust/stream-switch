@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
+import Activity from './pages/Activity'
 import Dashboard from './pages/Dashboard'
 import Login from './pages/Login'
 import Settings from './pages/Settings'
@@ -38,6 +39,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Users />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/activity"
+        element={
+          <ProtectedRoute>
+            <Activity />
           </ProtectedRoute>
         }
       />
