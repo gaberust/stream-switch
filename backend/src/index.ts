@@ -81,8 +81,7 @@ export async function buildApp(options: { logger?: boolean } = {}): Promise<Fast
 async function main() {
   await seed()
   const app = await buildApp()
-  const host = process.env.TRUST_PROXY === 'true' ? '127.0.0.1' : '0.0.0.0'
-  await app.listen({ port: 3000, host })
+  await app.listen({ port: 3000, host: process.env.BIND_HOST ?? '0.0.0.0' })
 }
 
 if (require.main === module) {

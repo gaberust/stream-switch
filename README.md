@@ -138,6 +138,9 @@ YOUTUBE_REDIRECT_URI=http://localhost:3000/api/youtube/callback
 
 # Set to true if running behind nginx, Caddy, or another HTTPS reverse proxy.
 TRUST_PROXY=false
+
+# 0.0.0.0 = accessible from any network interface (default)
+# 127.0.0.1 = only accessible from localhost
 BIND_HOST=0.0.0.0
 ```
 
@@ -192,6 +195,7 @@ services:
     environment:
       NODE_ENV: production
       DATABASE_PATH: /data/stream-switch.db
+      BIND_HOST: '0.0.0.0'
     restart: unless-stopped
 
 volumes:
