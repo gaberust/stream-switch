@@ -142,6 +142,17 @@ TRUST_PROXY=false
 # 0.0.0.0 = accessible from any network interface (default)
 # 127.0.0.1 = only accessible from localhost
 BIND_HOST=0.0.0.0
+
+# ── Email (optional) ──────────────────────────────────────────────────────────
+# Required for: forgot password and email-based user invites.
+# Leave SMTP_HOST blank to disable all email features.
+APP_URL=http://YOUR-SERVER-ADDRESS:3000
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=
+SMTP_PASS=
+SMTP_FROM=noreply@yourdomain.com
 ```
 
 **Generating a SESSION_SECRET:** Run this command in a terminal and paste the output as the value:
@@ -160,7 +171,18 @@ YOUTUBE_CLIENT_SECRET=GOCSPX-xxxxxxxxxxxxxxxxxxxx
 YOUTUBE_REDIRECT_URI=http://192.168.1.100:3000/api/youtube/callback
 TRUST_PROXY=false
 BIND_HOST=0.0.0.0
+
+# Optional — remove if you don't need email features
+APP_URL=http://192.168.1.100:3000
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=you@gmail.com
+SMTP_PASS=your-app-password
+SMTP_FROM=you@gmail.com
 ```
+
+> **Note on `APP_URL`:** This should be the address your team uses to reach Stream Switch in their browser (same as your `YOUTUBE_REDIRECT_URI` base URL). It is used to generate password-reset and invite links in emails.
 
 ---
 
@@ -313,8 +335,10 @@ Any team member who needs to start or stop streams should have their own account
 ### Add a user
 
 1. Go to **"Users"** in the navigation.
-2. Enter a username and password for the new team member, then click **"Add User"**.
+2. Enter a username and password for the new team member, then click **"Create User"**.
 3. Share their login details with them and ask them to change their password in **Settings → Change Password**.
+
+**If SMTP email is configured**, you can instead send the user an invite email: select **"Send invite email"**, enter their email address, and click **"Create & Send Invite"**. They'll receive a link to set their own password — no need to share credentials manually.
 
 ### Remove a user
 
@@ -418,7 +442,11 @@ docker compose -f docker-compose.prod.yml up -d --build
 ## Troubleshooting
 
 ### "Invalid credentials" when logging in
-Make sure you're using the correct username and password. The default is `admin` / `changeme`. If you've forgotten your password, see [Resetting the Admin Password](#resetting-the-admin-password) below.
+Make sure you're using the correct username and password. The default is `admin` / `changeme`.
+
+If a user has forgotten their password and email is configured, they can use the **"Forgot password?"** link on the login page to receive a reset link by email.
+
+If the admin account is locked out or email is not configured, see [Resetting the Admin Password](#resetting-the-admin-password) below.
 
 ### YouTube connection fails with an error
 - Check that `YOUTUBE_REDIRECT_URI` in `.env` exactly matches the URI in Google Cloud Console — even a missing `http://` or a trailing slash will cause it to fail.
