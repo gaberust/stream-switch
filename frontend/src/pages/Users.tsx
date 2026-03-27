@@ -1,4 +1,4 @@
-import { KeyRound, Shield, ShieldOff, Trash2 } from 'lucide-react'
+import { KeyRound, Mail, Shield, ShieldOff, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import Layout from '@/components/Layout'
 import { Button } from '@/components/ui/button'
@@ -11,17 +11,25 @@ interface UserRow {
   id: number
   username: string
   isAdmin: boolean
+  email: string | null
+  invitePending: boolean
 }
 
 export default function Users() {
   const { user } = useAuth()
   const [users, setUsers] = useState<UserRow[]>([])
+  const [smtpEnabled, setSmtpEnabled] = useState(false)
+
+  // Add user form
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [email, setEmail] = useState('')
   const [isAdmin, setIsAdmin] = useState(false)
+  const [useInvite, setUseInvite] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Change password inline panel
   const [changingPwFor, setChangingPwFor] = useState<number | null>(null)
   const [newPw, setNewPw] = useState('')
   const [confirmPw, setConfirmPw] = useState('')
@@ -33,6 +41,10 @@ export default function Users() {
       .then((r) => r.json() as Promise<UserRow[]>)
       .then(setUsers)
       .catch(() => setUsers([]))
+    fetch('/api/config/features')
+      .then((r) => r.json() as Promise<{ smtpEnabled: boolean }>)
+      .then((d) => setSmtpEnabled(d.smtpEnabled))
+      .catch(() => {})
   }, [])
 
   const createUser = async (e: React.FormEvent) => {
@@ -40,16 +52,20 @@ export default function Users() {
     setError(null)
     setSubmitting(true)
     try {
+      const body = useInvite
+        ? { username, email, isAdmin }
+        : { username, password, isAdmin }
       const res = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password, isAdmin }),
+        body: JSON.stringify(body),
       })
       const data = await res.json() as UserRow & { error?: string }
       if (!res.ok) throw new Error(data.error ?? 'Failed to create user')
       setUsers((prev) => [...prev, data])
       setUsername('')
       setPassword('')
+      setEmail('')
       setIsAdmin(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create user')
@@ -72,6 +88,14 @@ export default function Users() {
     if (res.ok) {
       const updated = await res.json() as UserRow
       setUsers((prev) => prev.map((u) => (u.id === row.id ? updated : u)))
+    }
+  }
+
+  const resendInvite = async (id: number) => {
+    const res = await fetch(`/api/users/${id}/resend-invite`, { method: 'POST' })
+    if (!res.ok) {
+      const data = await res.json() as { error?: string }
+      alert(data.error ?? 'Failed to resend invite')
     }
   }
 
@@ -117,6 +141,27 @@ export default function Users() {
           </CardHeader>
           <CardContent>
             <form onSubmit={createUser} className="space-y-3">
+              {smtpEnabled && (
+                <div className="flex gap-4 text-sm">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      checked={!useInvite}
+                      onChange={() => setUseInvite(false)}
+                    />
+                    Set password
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      checked={useInvite}
+                      onChange={() => setUseInvite(true)}
+                    />
+                    Send invite email
+                  </label>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label htmlFor="new-username">Username</Label>
@@ -127,17 +172,32 @@ export default function Users() {
                     required
                   />
                 </div>
-                <div className="space-y-1">
-                  <Label htmlFor="new-password">Password</Label>
-                  <Input
-                    id="new-password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
+                {useInvite ? (
+                  <div className="space-y-1">
+                    <Label htmlFor="new-email">Email</Label>
+                    <Input
+                      id="new-email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <Label htmlFor="new-password">Password</Label>
+                    <Input
+                      id="new-password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      minLength={8}
+                    />
+                  </div>
+                )}
               </div>
+
               <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
@@ -149,7 +209,7 @@ export default function Users() {
               </label>
               {error && <p className="text-sm text-destructive">{error}</p>}
               <Button type="submit" disabled={submitting}>
-                {submitting ? 'Creating…' : 'Create User'}
+                {submitting ? 'Creating…' : useInvite ? 'Create & Send Invite' : 'Create User'}
               </Button>
             </form>
           </CardContent>
@@ -165,18 +225,36 @@ export default function Users() {
               {users.map((row) => (
                 <div key={row.id}>
                   <div className="flex items-center justify-between px-6 py-3">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
                       <span className="font-medium">{row.username}</span>
                       {row.isAdmin && (
                         <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
                           admin
                         </span>
                       )}
+                      {row.invitePending && (
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                          invite pending
+                        </span>
+                      )}
                       {row.id === user?.id && (
                         <span className="text-xs text-muted-foreground">(you)</span>
                       )}
+                      {row.email && !row.invitePending && (
+                        <span className="text-xs text-muted-foreground truncate hidden sm:block">{row.email}</span>
+                      )}
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 shrink-0">
+                      {row.invitePending && smtpEnabled && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Resend invite"
+                          onClick={() => resendInvite(row.id)}
+                        >
+                          <Mail className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="icon"
@@ -220,6 +298,7 @@ export default function Users() {
                             value={newPw}
                             onChange={(e) => setNewPw(e.target.value)}
                             required
+                            minLength={8}
                             autoFocus
                           />
                         </div>

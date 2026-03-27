@@ -5,6 +5,8 @@ export const users = sqliteTable('users', {
   username: text('username').notNull().unique(),
   passwordHash: text('password_hash').notNull(),
   isAdmin: integer('is_admin', { mode: 'boolean' }).notNull().default(false),
+  email: text('email'),
+  invitePending: integer('invite_pending', { mode: 'boolean' }).notNull().default(false),
 })
 
 export const youtubeAccounts = sqliteTable('youtube_accounts', {

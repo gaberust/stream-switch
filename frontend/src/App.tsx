@@ -3,7 +3,9 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
 import Activity from './pages/Activity'
 import Dashboard from './pages/Dashboard'
+import ForgotPassword from './pages/ForgotPassword'
 import Login from './pages/Login'
+import ResetPassword from './pages/ResetPassword'
 import Settings from './pages/Settings'
 import Users from './pages/Users'
 
@@ -18,6 +20,8 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route
         path="/"
         element={

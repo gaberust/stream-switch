@@ -130,7 +130,7 @@ describe('User management', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/users',
-      payload: { username: 'newuser', password: 'other' },
+      payload: { username: 'newuser', password: 'password2' },
       headers: { cookie: adminCookie },
     })
     expect(res.statusCode).toBe(409)

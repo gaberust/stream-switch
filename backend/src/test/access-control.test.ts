@@ -19,7 +19,7 @@ afterAll(async () => {
 
 const adminOnlyEndpoints: Array<{ method: string; url: string; payload?: unknown }> = [
   { method: 'GET', url: '/api/users' },
-  { method: 'POST', url: '/api/users', payload: { username: 'x', password: 'y' } },
+  { method: 'POST', url: '/api/users', payload: { username: 'x', password: 'password1' } },
   { method: 'POST', url: '/api/streams', payload: { name: 'x', youtubeTitle: 'x' } },
   { method: 'DELETE', url: '/api/streams/nonexistent' },
   { method: 'GET', url: '/api/config/stream' },

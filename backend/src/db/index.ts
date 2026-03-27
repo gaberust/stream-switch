@@ -74,7 +74,9 @@ sqlite.exec(`
     FOREIGN KEY (started_by) REFERENCES users(id)
   )
 `)
-// Safe migration: add stream_id column if it was created before this column existed
+// Safe migrations
 try { sqlite.exec(`ALTER TABLE stream_forwards ADD COLUMN stream_id TEXT NOT NULL DEFAULT ''`) } catch { /* already exists */ }
+try { sqlite.exec(`ALTER TABLE users ADD COLUMN email TEXT`) } catch { /* already exists */ }
+try { sqlite.exec(`ALTER TABLE users ADD COLUMN invite_pending INTEGER NOT NULL DEFAULT 0`) } catch { /* already exists */ }
 
 export const db = drizzle(sqlite, { schema })
